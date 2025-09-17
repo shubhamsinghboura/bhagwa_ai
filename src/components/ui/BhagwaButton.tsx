@@ -1,10 +1,18 @@
 "use client";
 
-export default function BhagwaButton({ children, onClick, className = "" }:any) {
+import { ReactNode } from "react";
+
+interface BhagwaButtonProps {
+  children: ReactNode;
+  onClick?: () => void;
+  className?: string;
+}
+
+export default function BhagwaButton({ children, onClick, className = "" }: BhagwaButtonProps) {
   return (
     <button
       onClick={onClick}
-     className={`
+      className={`
         flex items-center gap-2
         px-6 py-3 rounded font-semibold text-white
         bg-gradient-to-r from-[#ff7c20] to-[#ffa147]

@@ -3,7 +3,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { Menu, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { flag, mindAi } from '../ui/ImageAssets';
+import {  mindAi } from '../ui/ImageAssets';
 import Image from 'next/image';
 const Navbar = () => {
     const [isOpen, setIsOpen] = useState(false);

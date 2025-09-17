@@ -7,14 +7,14 @@ import "./globals.css";
 // 2. Configure the fonts
 const poppins = Poppins({ 
   subsets: ["latin"],
-  weight: ['400', '600', '700'], // Include the weights you'll use
-  variable: '--font-poppins', // Set up a CSS variable for the main font
+  weight: ["400", "600", "700"], // Include the weights you'll use
+  variable: "--font-poppins", // Set up a CSS variable for the main font
 });
 
-export const exo2 = Exo_2({
+const exo2 = Exo_2({
   subsets: ["latin"],
-  weight: ['700', '800'],
-  variable: '--font-exo2', // Set up a CSS variable for the logo font
+  weight: ["700", "800"],
+  variable: "--font-exo2", // Set up a CSS variable for the logo font
 });
 
 export const metadata: Metadata = {

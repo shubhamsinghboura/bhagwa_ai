@@ -3,18 +3,21 @@ import { useState } from "react";
 import { Menu, Send, Plus, Bot, User, Paperclip, FileImage, FileText } from "lucide-react";
 import BackgroundFlag from "@/components/ui/BackgroundFlag";
 
+type Message = {
+  sender: "user" | "ai";
+  text: string;
+};
+
 export default function ChatApp() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [messages, setMessages] = useState<
-    { sender: "user" | "ai"; text: string }[]
-  >([]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [uploadOpen, setUploadOpen] = useState(false);
 
   const handleSend = () => {
     if (!input.trim()) return;
-    const newMessage = { sender: "user", text: input };
-    setMessages((prev:any) => [...prev, newMessage]);
+    const newMessage: Message = { sender: "user", text: input };
+    setMessages((prev) => [...prev, newMessage]);
 
     // Mock AI reply
     setTimeout(() => {
@@ -35,7 +38,6 @@ export default function ChatApp() {
     alert(`You selected: ${type}`);
     setUploadOpen(false);
   };
-
   return (
 <>
     <BackgroundFlag/>
