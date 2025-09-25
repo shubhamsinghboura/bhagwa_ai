@@ -1,8 +1,49 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Menu, Send, Plus, Bot, User, Paperclip, FileImage, FileText, ImageIcon } from "lucide-react";
+import { Menu, Send, Plus, Bot, User, ImageIcon, Clipboard, Check } from "lucide-react";
+import ReactMarkdown from 'react-markdown';
+import { ReactNode } from 'react';
 import BackgroundFlag from "@/components/ui/BackgroundFlag";
+
+const CodeBlock = ({ children, className }: { children: ReactNode, className?: string }) => {
+    const [isCopied, setIsCopied] = useState(false);
+    const textToCopy = String(children).replace(/\n$/, '');
+
+    const language = className?.replace(/language-/, '') || 'code';
+
+    const handleCopy = () => {
+        const textArea = document.createElement("textarea");
+        textArea.value = textToCopy;
+        document.body.appendChild(textArea);
+        textArea.select();
+        try {
+            document.execCommand('copy');
+            setIsCopied(true);
+            setTimeout(() => setIsCopied(false), 2000); // Reset after 2 seconds
+        } catch (err) {
+            console.error('Failed to copy text: ', err);
+        }
+        document.body.removeChild(textArea);
+    };
+
+    return (
+        <div className="my-4 rounded-md bg-zinc-900 border border-zinc-700 overflow-hidden">
+            <div className="flex items-center justify-between bg-zinc-800 px-4 py-1.5">
+                <span className="text-xs font-sans text-gray-400 capitalize">{language}</span>
+                <button
+                    onClick={handleCopy}
+                    className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-white transition-colors"
+                >
+                    {isCopied ? <Check size={14} /> : <Clipboard size={14} />}
+                    {isCopied ? 'Copied!' : 'Copy code'}
+                </button>
+            </div>
+            <pre className="p-4 overflow-x-auto text-sm"><code className={className}>{children}</code></pre>
+        </div>
+    );
+};
+
 
 type Message = {
   id: number;
@@ -16,9 +57,7 @@ export default function ChatApp() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
-  const [uploadOpen, setUploadOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -51,11 +90,15 @@ export default function ChatApp() {
     const loadingMessageId = Date.now() + Math.random();
     setMessages((prev) => [...prev, { id: loadingMessageId, sender: 'ai', isLoading: true }]);
 
+    // --- NEW: System prompt to guide the AI's formatting ---
+    const systemPrompt = "You are BhagwaAI. Format your answers clearly using Markdown. Use headings with emojis, bullet points, and code blocks for commands or code. Always be helpful and direct.";
+    const fullPrompt = `${systemPrompt}\n\nUser query: ${prompt}`;
+
     try {
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt }),
+        body: JSON.stringify({ prompt: fullPrompt }), // Sending the full prompt
       });
 
       if (!response.ok) throw new Error('Failed to get a response from the AI.');
@@ -70,8 +113,8 @@ export default function ChatApp() {
       setMessages(prev => prev.map(msg => msg.id === loadingMessageId ? errorMessage : msg));
     }
   };
-
-  const handleGenerateImage = async (prompt: string) => {
+  
+    const handleGenerateImage = async (prompt: string) => {
     const loadingMessageId = Date.now() + Math.random();
     setMessages((prev) => [...prev, { id: loadingMessageId, sender: 'ai', isLoading: true }]);
     
@@ -100,7 +143,7 @@ export default function ChatApp() {
 
   return (
     <>
-      <BackgroundFlag /> 
+      <BackgroundFlag />  
       <div className="flex h-screen text-white ">
         {sidebarOpen && (
           <div className="w-64 bg-zinc-900 p-4 flex flex-col">
@@ -133,13 +176,37 @@ export default function ChatApp() {
               <div className="flex-1 overflow-y-auto p-6 space-y-4">
                 {messages.map((msg) => (
                   <div key={msg.id} className={`flex items-start gap-3 ${msg.sender === "user" ? "justify-end" : "justify-start"}`}>
-                    {msg.sender === "ai" && <div className="bg-zinc-800 p-2 rounded-full mt-1"><Bot size={18} /></div>}
-                    <div className={`px-4 py-2 rounded-2xl max-w-lg md:max-w-2xl ${msg.sender === "user" ? "bg-orange-500 text-white rounded-br-none" : "bg-zinc-800 text-gray-200 rounded-bl-none"}`}>
+                    {msg.sender === "ai" && <div className="bg-zinc-800 p-2 rounded-full mt-1 flex-shrink-0"><Bot size={18} /></div>}
+                    
+                    <div className={`px-4 py-2 rounded-2xl ${msg.sender === "user" 
+                        ? "bg-orange-500 text-white rounded-br-none max-w-lg" 
+                        : "bg-zinc-800 text-gray-200 rounded-bl-none max-w-4xl"
+                      }`}>
+                      
                       {msg.isLoading && <span className="animate-pulse">Thinking...</span>}
-                      {msg.text && <div className="whitespace-pre-wrap">{msg.text}</div>}
+                      
+                      {msg.text && (
+                        <div className="prose prose-invert prose-sm max-w-none">
+                            <ReactMarkdown
+                                // rehypePlugins={[rehypeHighlight]} -- Removed problematic plugin
+                                // --- NEW: Tell ReactMarkdown to use our custom component ---
+                                components={{
+                                    pre: ({ node, ...props }) => {
+                                        const codeNode = node?.children[0] as any;
+                                        const className = codeNode?.properties?.className?.[0] || '';
+                                        return <CodeBlock className={className} {...props} />;
+                                    },
+                                }}
+                            >
+                                {msg.text}
+                            </ReactMarkdown>
+                        </div>
+                      )}
+                      
                       {msg.imageUrl && <img src={msg.imageUrl} alt="Generated by AI" className="rounded-lg max-w-full h-auto" />}
                     </div>
-                    {msg.sender === "user" && <div className="bg-orange-500 p-2 rounded-full mt-1"><User size={18} /></div>}
+                    
+                    {msg.sender === "user" && <div className="bg-orange-500 p-2 rounded-full mt-1 flex-shrink-0"><User size={18} /></div>}
                   </div>
                 ))}
                 <div ref={messagesEndRef} />
@@ -147,7 +214,7 @@ export default function ChatApp() {
             )}
             
             <div className="p-4 border-t border-zinc-800">
-              <div className="w-full max-w-2xl mx-auto flex items-center bg-zinc-900 rounded-full px-4 py-2 border border-zinc-700 relative">
+              <div className="w-full max-w-4xl mx-auto flex items-center bg-zinc-900 rounded-full px-4 py-2 border border-zinc-700 relative">
                 <input
                   type="text"
                   placeholder={isLoading ? "BhagwaAI is thinking..." : "Ask a question or use /image..."}

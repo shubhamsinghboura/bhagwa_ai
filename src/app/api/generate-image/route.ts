@@ -3,13 +3,12 @@
 import { GoogleGenAI } from "@google/genai";
 import { NextResponse } from "next/server";
 
-const ai = new GoogleGenAI({ apiKey: 'AIzaSyCTruLiHzfbG8Em2sckWqY1oOowt5P8-6A' });
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
 
 
 export async function POST(request: Request) {
   try {
     const { prompt } = await request.json();
-
     if (!prompt) {
       return NextResponse.json(
         { error: "Prompt is required" },
